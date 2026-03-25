@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Creador de Historias y Personajes</title>
+  <style>body{font-family:Arial,Helvetica,sans-serif;background:#f4f6f8;color:#2c3e50;line-height:1.5;margin:0;padding:0}.container{max-width:960px;margin:0 auto;padding:24px}.card{background:#fff;border-radius:10px;box-shadow:0 2px 14px rgba(0,0,0,.08);margin-bottom:20px;padding:20px}.btn{background:#2d6cdf;color:#fff;border:none;padding:10px 16px;border-radius:6px;cursor:pointer}textarea,input{width:100%;padding:10px;border:1px solid #ccd1d9;border-radius:6px;margin-top:8px}</style>
+</head>
+<body>
+  <div class="container">
+    <h1>AI Historias y Personajes</h1>
+    <div class="card">
+      <h2>Crear Personaje</h2>
+      <label>Nombre</label><input id="ch-name" placeholder="Opcional" />
+      <label>Rol</label><input id="ch-role" placeholder="Protagonista/Antagonista" />
+      <label>Entorno</label><input id="ch-setting" placeholder="Fantasía, Sci-Fi, Histórico" />
+      <label>Personalidad</label><input id="ch-personality" placeholder="Valiente, tímido, astuto" />
+      <button class="btn" id="create-character">Generar Personaje</button>
+      <pre id="character-result"></pre>
+    </div>
+
+    <div class="card">
+      <h2>Crear Historia</h2>
+      <label>Título</label><input id="story-title" placeholder="El gran viaje" />
+      <label>Personajes (breve listado, separados por coma)</label><input id="story-characters" placeholder="Ayla, Berto" />
+      <label>Tema</label><input id="story-theme" placeholder="Amistad, redención" />
+      <label>Longitud</label><input id="story-length" placeholder="Corta, mediana, larga" />
+      <button class="btn" id="create-story">Generar Historia</button>
+      <pre id="story-result"></pre>
+    </div>
+
+    <div class="card">
+      <h2>Simular respuesta del personaje</h2>
+      <label>Texto del diálogo o situación</label>
+      <textarea id="sim-prompt" rows="4" placeholder="¿Qué diría Ayla si ve un portal misterioso?"></textarea>
+      <button class="btn" id="simulate">Simular conducta</button>
+      <pre id="sim-result"></pre>
+    </div>
+  </div>
+
+  <script>
+    async function post(endpoint, body) {
+      const r = await fetch(endpoint, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      return r.json();
+    }
+
+    document.getElementById('create-character').onclick = async () => {
+      const payload = {
+        name: document.getElementById('ch-name').value,
+        role: document.getElementById('ch-role').value,
+        setting: document.getElementById('ch-setting').value,
+        personality: document.getElementById('ch-personality').value,
+      };
+      document.getElementById('character-result').textContent = 'Generando...';
+      const data = await post('/api/create-character', payload);
+      document.getElementById('character-result').textContent = data.ok ? data.character : (data.error || 'Error');
+    };
+
+    document.getElementById('create-story').onclick = async () => {
+      const payload = {
+        title: document.getElementById('story-title').value,
+        characters: document.getElementById('story-characters').value,
+        theme: document.getElementById('story-theme').value,
+        length: document.getElementById('story-length').value,
+      };
+      document.getElementById('story-result').textContent = 'Generando...';
+      const data = await post('/api/create-story', payload);
+      document.getElementById('story-result').textContent = data.ok ? data.story : (data.error || 'Error');
+    };
+
+    document.getElementById('simulate').onclick = async () => {
+      const prompt = document.getElementById('sim-prompt').value || 'Crea una breve interacción de personaje.';
+      document.getElementById('sim-result').textContent = 'Simulando...';
+      const data = await post('/api/create-story', { title: 'Simulación breve', characters: prompt, theme: 'Simulación rápida', length: 'corta' });
+      document.getElementById('sim-result').textContent = data.ok ? data.story : (data.error || 'Error');
+    };
+  </script>
+</body>
+</html>
