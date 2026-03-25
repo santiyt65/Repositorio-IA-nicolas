@@ -199,14 +199,9 @@
     setActive('character-chat');
   }
 
-  function addCharChat(message, sender = 'user') {
-    const log = document.getElementById('char-chat-log');
-    const d = document.createElement('div');
-    d.className = 'message ' + (sender === 'user' ? 'user' : 'ai');
-    d.textContent = `${sender === 'user' ? 'Tú' : char.name}: ${message}`;
-    log.appendChild(d);
-    log.scrollTop = log.scrollHeight;
-  }
+  function publish(id){
+    const p=state.characters.find(c=>c.id===id); if(!p)return; p.status='published'; saveState(); renderFeed(); renderProfile();}
+
   function setActive(tab){
     document.querySelectorAll('.sidebar button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
     document.querySelectorAll('.tab').forEach(t=>t.style.display= t.id===tab ? 'block':'none');
@@ -223,7 +218,9 @@
     window.location.href = '/auth/google';
   });
 
-  document.getElementById('char-chat-send').addEventListener('click', async () => {
+  document.getElementById('logout-google').addEventListener('click', () => {
+    window.location.href = '/auth/logout';
+  });
     const msg = document.getElementById('char-chat-input').value.trim();
     if (!msg || !state.currentChar) return;
     addCharChat(msg, 'user');
@@ -234,9 +231,11 @@
     document.getElementById('char-chat-log').lastChild.remove();
     const answer = data.ok ? data.response : 'Error en respuesta.';
     addCharChat(answer, 'ai');
-  });
+  ;
 
   document.getElementById('back-to-home').addEventListener('click', () => setActive('home'));
+
+  document.getElementById('chat-send').addEventListener('click',async () => {
     const msg = document.getElementById('chat-input').value.trim(); if(!msg)return;
     addChat(msg,'user');
     document.getElementById('chat-input').value='';
