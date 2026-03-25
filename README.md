@@ -18,6 +18,12 @@ npm run dev
 ## Uso
 - Visitar http://localhost:3000
 - Generar personajes e historias.
+- Si no tienes OPENAI_API_KEY, el sistema usará generación interna de ejemplo.
+
+## Configuración OpenAI
+- Copia `.env.example` a `.env`
+- Define `OPENAI_API_KEY=tu_api_key`
+- Arranca con `npm start`
 
 ## Despliegue en Render
 1. Crear un nuevo servicio Web en Render.

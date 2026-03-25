@@ -20,8 +20,28 @@ if (!openaiKey) {
   openai = new OpenAIApi(configuration);
 }
 
-async function askOpenAI(prompt) {
+function generateCharacterOffline({ name, role, setting, personality }) {
+  const n = name || 'Alex';
+  const r = role || 'Protagonista';
+  const s = setting || 'fantasía moderna';
+  const p = personality || 'valiente y curioso';
+  return `Personaje: ${n}\nRol: ${r}\nEntorno: ${s}\nPersonalidad: ${p}\n\nBiografía: ${n} creció en un lugar donde las antiguas tradiciones y la tecnología conviven. Siempre ha sentido que su destino es cambiar el mundo.
+Motivaciones: Busca justicia y aventura, y quiere proteger a su gente.       
+Debilidades: A veces actúa sin pensar y confía demasiado en otros.\nComportamientos típicos: Observador, amigable, empático, toma el liderazgo en crisis.\nEjemplo de diálogo:\n- "No temeré al cambio, lo crearé."\n- "¿Quién quiere explorar conmigo?"\n- "Siento que este lugar guarda un secreto..."`;
+}
+
+function generateStoryOffline({ title, characters, theme, length }) {
+  const t = title || 'El viaje luminoso';
+  const c = characters || 'Un grupo de héroes';
+  const th = theme || 'amistad y aventura';
+  const l = length || 'mediana';
+  return `Título: ${t}\nTema: ${th}\nPersonajes: ${c}\n\nEscenario inicial: En el reino de Liria, donde la magia brota en cada río, comienza la historia de un grupo unido.\nConflicto central: Un antiguo portal amenaza con liberar sombras que corrompen corazones.\nDesarrollo: ${c} se embarca en una misión, enfrentando desafíos que ponen a prueba sus miedos y fortalezas. Sus personalidades marcan cada decisión.\nResolución: Gracias a la confianza y el valor, hallan la fuente de la oscuridad y la transforman en luz; descubren que el verdadero poder está en su unión.`;
+}
+
+async function askOpenAI(prompt, fallbackData) {
   if (!openai) {
+    if (fallbackData?.type === 'character') return generateCharacterOffline(fallbackData.params);
+    if (fallbackData?.type === 'story') return generateStoryOffline(fallbackData.params);
     return 'OpenAI no está configurado. Establece OPENAI_API_KEY en el entorno para usar IA real.';
   }
   const response = await openai.createChatCompletion({
@@ -42,7 +62,7 @@ app.post('/api/create-character', async (req, res) => {
 - Debilidades
 - Comportamientos típicos
 - Ejemplo de diálogo (3 líneas)`;
-    const result = await askOpenAI(prompt);
+    const result = await askOpenAI(prompt, { type: 'character', params: { name, role, setting, personality } });
     res.json({ ok: true, character: result });
   } catch (error) {
     console.error(error);
@@ -58,7 +78,7 @@ app.post('/api/create-story', async (req, res) => {
 - Conflicto central
 - Desarrollo con cada personaje actuando según su personalidad
 - Resolución inspiradora`
-    const result = await askOpenAI(prompt);
+    const result = await askOpenAI(prompt, { type: 'story', params: { title, characters, theme, length } });
     res.json({ ok: true, story: result });
   } catch (error) {
     console.error(error);
