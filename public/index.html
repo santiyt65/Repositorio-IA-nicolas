@@ -27,6 +27,13 @@
     .message.user{color:#ff6666}
     .message.ai{color:#ffffff}
     .badge{display:inline-block;background:#333;color:#ffffff;border-radius:400px;padding:2px 8px;font-size:.75em}
+    .profile-header{background:linear-gradient(90deg, #1a1a1a 0%, #2a0a0a 100%); padding:0; border:2px solid #ff0000}
+    .profile-card{display:flex;align-items:center;gap:30px;padding:20px}
+    .profile-info{flex:1}
+    .profile-stats{display:flex;gap:20px}
+    .stat-box{background:#000;border:1px solid #ff0000;border-radius:8px;padding:15px 20px;text-align:center}
+    .stat-number{font-size:28px;font-weight:bold;color:#ffffff;line-height:1}
+    .stat-label{font-size:12px;color:#ff6666;margin-top:5px}
   </style>
 </head>
 <body>
@@ -92,6 +99,33 @@
           <button class="btn btn-secondary" id="back-to-home">Volver al inicio</button>
         </div>
       </section>
+
+      <section id="profile" class="tab" style="display:none">
+        <div class="card profile-header">
+          <div class="profile-card">
+            <div class="profile-info">
+              <h2 id="profile-name" style="margin:0;color:#ffffff;">Invitado</h2>
+              <p style="margin:5px 0 0 0;color:#ff6666;">Mi perfil</p>
+            </div>
+            <div class="profile-stats">
+              <div class="stat-box">
+                <div class="stat-number" id="stat-chats">0</div>
+                <div class="stat-label">Chats</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-number" id="stat-characters">0</div>
+                <div class="stat-label">Personajes</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-number" id="stat-published">0</div>
+                <div class="stat-label">Publicados</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card"><h3>Personajes creados</h3><div id="profile-characters"></div></div>
+        <div class="card"><h3>Borradores</h3><div id="profile-drafts"></div></div>
+      </section>
     </main>
   </div>
 
@@ -139,7 +173,9 @@
 
   function renderSideUser(){
     document.getElementById('current-user').textContent = state.user.username;
-    document.getElementById('profile-name').textContent = state.user.username;
+    if (document.getElementById('profile-name')) {
+      document.getElementById('profile-name').textContent = state.user.username;
+    }
     const isLogged = state.user && state.user.email;
     document.getElementById('login-google').style.display = isLogged ? 'none' : 'block';
     document.getElementById('logout-google').style.display = isLogged ? 'block' : 'none';
@@ -177,6 +213,10 @@
     chars.innerHTML=''; drafts.innerHTML='';
     const owned= state.characters.filter(c=>c.owner===state.user.username && c.status==='published');
     const draftsList= state.characters.filter(c=>c.owner===state.user.username && c.status==='draft');
+    const totalChars = owned.length + draftsList.length;
+    document.getElementById('stat-chats').textContent = state.chats.length;
+    document.getElementById('stat-characters').textContent = totalChars;
+    document.getElementById('stat-published').textContent = owned.length;
     if(!owned.length) chars.innerHTML='<p class="small">No has publicado personajes aún.</p>';
     owned.forEach(c=>{const n=document.createElement('div');n.className='list-item';n.innerHTML=`<strong>${c.name}</strong><small>${c.role} · ${c.setting}</small>`;chars.appendChild(n);});
     if(!draftsList.length) drafts.innerHTML='<p class="small">No tienes borradores.</p>';
