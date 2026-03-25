@@ -221,6 +221,8 @@
   document.getElementById('logout-google').addEventListener('click', () => {
     window.location.href = '/auth/logout';
   });
+
+  document.getElementById('char-chat-send').addEventListener('click', async () => {
     const msg = document.getElementById('char-chat-input').value.trim();
     if (!msg || !state.currentChar) return;
     addCharChat(msg, 'user');
@@ -231,7 +233,7 @@
     document.getElementById('char-chat-log').lastChild.remove();
     const answer = data.ok ? data.response : 'Error en respuesta.';
     addCharChat(answer, 'ai');
-  ;
+  });
 
   document.getElementById('back-to-home').addEventListener('click', () => setActive('home'));
 
