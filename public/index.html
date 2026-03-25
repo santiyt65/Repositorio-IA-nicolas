@@ -3,77 +3,235 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Creador de Historias y Personajes</title>
-  <style>body{font-family:Arial,Helvetica,sans-serif;background:#f4f6f8;color:#2c3e50;line-height:1.5;margin:0;padding:0}.container{max-width:960px;margin:0 auto;padding:24px}.card{background:#fff;border-radius:10px;box-shadow:0 2px 14px rgba(0,0,0,.08);margin-bottom:20px;padding:20px}.btn{background:#2d6cdf;color:#fff;border:none;padding:10px 16px;border-radius:6px;cursor:pointer}textarea,input{width:100%;padding:10px;border:1px solid #ccd1d9;border-radius:6px;margin-top:8px}</style>
+  <title>AI Comunidad de Historias</title>
+  <style>
+    :root{--bg:#f3f5f9;--panel:#fff;--primary:#2d6cdf;--text:#24303a;--border:#d6dced;--danger:#d23f3f}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text)}
+    .app{display:flex;min-height:100vh}
+    .sidebar{width:240px;background:#1f2a3f;color:#fff;padding:20px;display:flex;flex-direction:column}
+    .sidebar h1{font-size:18px;margin:0 0 20px}
+    .sidebar button{background:transparent;border:none;color:#c2d2eb;text-align:left;padding:10px;cursor:pointer;border-radius:8px;margin-bottom:4px}
+    .sidebar button.active{background:rgba(255,255,255,.16);color:#fff}
+    .content{flex:1;padding:20px}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,0,0,.04)}
+    .card h2{margin:0 0 10px}
+    input, textarea, select{width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;margin-top:6px;margin-bottom:12px}
+    .btn{background:var(--primary);color:#fff;border:none;padding:10px 14px;border-radius:6px;cursor:pointer}
+    .btn-secondary{background:#6b7c93}
+    .small{font-size:.9em;color:#5d6d82}
+    .list-item{border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px}
+    .flex{display:flex;gap:10px;align-items:center}
+    .chat-messages{max-height:300px;overflow:auto;border:1px solid var(--border);padding:10px;border-radius:6px;background:#fafbff}
+    .message{margin-bottom:8px}
+    .message.user{color:#1d4ed8}
+    .message.ai{color:#0f766e}
+    .badge{display:inline-block;background:#e0e7ff;color:#1e40af;border-radius:400px;padding:2px 8px;font-size:.75em}
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>AI Historias y Personajes</h1>
-    <div class="card">
-      <h2>Crear Personaje</h2>
-      <label>Nombre</label><input id="ch-name" placeholder="Opcional" />
-      <label>Rol</label><input id="ch-role" placeholder="Protagonista/Antagonista" />
-      <label>Entorno</label><input id="ch-setting" placeholder="Fantasía, Sci-Fi, Histórico" />
-      <label>Personalidad</label><input id="ch-personality" placeholder="Valiente, tímido, astuto" />
-      <button class="btn" id="create-character">Generar Personaje</button>
-      <pre id="character-result"></pre>
-    </div>
+  <div class="app">
+    <aside class="sidebar">
+      <h1>AI Stories</h1>
+      <button data-tab="home" class="active">Inicio</button>
+      <button data-tab="chat">Chat</button>
+      <button data-tab="create">Crear Personaje</button>
+      <button data-tab="explore">Explorar</button>
+      <button data-tab="profile">Perfil</button>
+      <div style="margin-top:auto;">
+        <small>Usuario:</small>
+        <strong id="current-user">Invitado</strong>
+        <button class="btn btn-secondary" id="login-google" style="margin-top:10px;width:100%;">Entrar con Google</button>
+        <button class="btn btn-secondary" id="logout-google" style="margin-top:8px;width:100%;display:none;">Cerrar sesión</button>
+      </div>
+    </aside>
 
-    <div class="card">
-      <h2>Crear Historia</h2>
-      <label>Título</label><input id="story-title" placeholder="El gran viaje" />
-      <label>Personajes (breve listado, separados por coma)</label><input id="story-characters" placeholder="Ayla, Berto" />
-      <label>Tema</label><input id="story-theme" placeholder="Amistad, redención" />
-      <label>Longitud</label><input id="story-length" placeholder="Corta, mediana, larga" />
-      <button class="btn" id="create-story">Generar Historia</button>
-      <pre id="story-result"></pre>
-    </div>
+    <main class="content">
+      <section id="home" class="tab" style="display:block">
+        <div class="card"><h2>Bienvenido</h2><p>Comparte personajes, sigue a miembros y encuentra historias nuevas.</p></div>
+        <div class="card"><h2>Personajes creados por la comunidad</h2><div id="feed-characters"></div></div>
+        <div class="card"><h2>Novedades</h2><div id="news-feed"></div></div>
+      </section>
 
-    <div class="card">
-      <h2>Simular respuesta del personaje</h2>
-      <label>Texto del diálogo o situación</label>
-      <textarea id="sim-prompt" rows="4" placeholder="¿Qué diría Ayla si ve un portal misterioso?"></textarea>
-      <button class="btn" id="simulate">Simular conducta</button>
-      <pre id="sim-result"></pre>
-    </div>
+      <section id="chat" class="tab" style="display:none">
+        <div class="card">
+          <h2>Chat de la comunidad</h2>
+          <div class="chat-messages" id="chat-log"></div>
+          <input id="chat-input" placeholder="Escribe un mensaje..." />
+          <button class="btn" id="chat-send">Enviar</button>
+        </div>
+      </section>
+
+      <section id="create" class="tab" style="display:none">
+        <div class="card"><h2>Crear personaje</h2>
+          <input id="ch-name" placeholder="Nombre" />
+          <input id="ch-role" placeholder="Rol" />
+          <input id="ch-setting" placeholder="Entorno" />
+          <input id="ch-personality" placeholder="Personalidad" />
+          <button class="btn" id="create-character">Crear y guardar</button>
+          <small class="small">Guarda personajes para tu perfil y conviértelos en borrador.</small>
+        </div>
+      </section>
+
+      <section id="explore" class="tab" style="display:none">
+        <div class="card"><h2>Explorar</h2>
+          <p>Sección para nuevas implementaciones, tutoriales y éxitos de la comunidad.</p>
+          <ul id="explore-list"></ul>
+        </div>
+      </section>
+
+      <section id="profile" class="tab" style="display:none">
+        <div class="card"><h2>Perfil de usuario</h2>
+          <p><b id="profile-name">Invitado</b></p>
+          <div><h3>Personajes creados</h3><div id="profile-characters"></div></div>
+          <div><h3>Borradores</h3><div id="profile-drafts"></div></div>
+        </div>
+      </section>
+    </main>
   </div>
 
-  <script>
-    async function post(endpoint, body) {
-      const r = await fetch(endpoint, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-      return r.json();
+<script>
+  const state = {
+    user: { username: 'Invitado' },
+    members: [
+      { username: 'Alya', followed: false },
+      { username: 'Berto', followed: false },
+      { username: 'Celia', followed: false }
+    ],
+    news: [
+      { id:1, title:'Nueva función: modo narrativa', date:'2026-03-25' },
+      { id:2, title:'Soporte para mundos compartidos', date:'2026-03-20' }
+    ],
+    explore:[
+      'Crear personajes con atributos avanzados', 'Chat IA con memoria de historia', 'Listado de eventos semanales'
+    ],
+    chats: JSON.parse(localStorage.getItem('ai_chats')||'[]'),
+    characters: JSON.parse(localStorage.getItem('ai_chars')||'[]'),
+  };
+
+  function saveState() {
+    localStorage.setItem('ai_chats', JSON.stringify(state.chats));
+    localStorage.setItem('ai_chars', JSON.stringify(state.characters));
+  }
+
+  function info(msg) { console.log('[AI]', msg); }
+
+  async function fetchUser() {
+    try {
+      const res = await fetch('/api/user', { credentials: 'include' });
+      const data = await res.json();
+      if (data.ok && data.user) {
+        state.user = data.user;
+      } else {
+        state.user = { username: 'Invitado' };
+      }
+    } catch (err) {
+      console.error('Error obteniendo usuario', err);
+      state.user = { username: 'Invitado' };
     }
+    renderSideUser();
+  }
 
-    document.getElementById('create-character').onclick = async () => {
-      const payload = {
-        name: document.getElementById('ch-name').value,
-        role: document.getElementById('ch-role').value,
-        setting: document.getElementById('ch-setting').value,
-        personality: document.getElementById('ch-personality').value,
-      };
-      document.getElementById('character-result').textContent = 'Generando...';
-      const data = await post('/api/create-character', payload);
-      document.getElementById('character-result').textContent = data.ok ? data.character : (data.error || 'Error');
-    };
+  function renderSideUser(){
+    document.getElementById('current-user').textContent = state.user.username;
+    document.getElementById('profile-name').textContent = state.user.username;
+    const isLogged = state.user && state.user.email;
+    document.getElementById('login-google').style.display = isLogged ? 'none' : 'block';
+    document.getElementById('logout-google').style.display = isLogged ? 'block' : 'none';
+  }
 
-    document.getElementById('create-story').onclick = async () => {
-      const payload = {
-        title: document.getElementById('story-title').value,
-        characters: document.getElementById('story-characters').value,
-        theme: document.getElementById('story-theme').value,
-        length: document.getElementById('story-length').value,
-      };
-      document.getElementById('story-result').textContent = 'Generando...';
-      const data = await post('/api/create-story', payload);
-      document.getElementById('story-result').textContent = data.ok ? data.story : (data.error || 'Error');
-    };
+  function renderFeed() {
+    const feed = document.getElementById('feed-characters');
+    feed.innerHTML='';
+    const chars = state.characters.slice().reverse();
+    if(!chars.length) feed.innerHTML='<p class="small">Aún no hay personajes. Crea uno para empezar.</p>';
+    chars.forEach(c=>{
+      const el = document.createElement('div'); el.className='list-item';
+      el.innerHTML=`<strong>${c.name}</strong> <span class="badge">${c.role}</span><br><small>${c.setting} • ${c.personality}</small><p>${c.snippet || ''}</p>`;
+      feed.appendChild(el);
+    });
+  }
 
-    document.getElementById('simulate').onclick = async () => {
-      const prompt = document.getElementById('sim-prompt').value || 'Crea una breve interacción de personaje.';
-      document.getElementById('sim-result').textContent = 'Simulando...';
-      const data = await post('/api/create-story', { title: 'Simulación breve', characters: prompt, theme: 'Simulación rápida', length: 'corta' });
-      document.getElementById('sim-result').textContent = data.ok ? data.story : (data.error || 'Error');
-    };
-  </script>
+  function renderNews(){
+    const container=document.getElementById('news-feed');
+    container.innerHTML='';
+    state.news.forEach(n=>{const e=document.createElement('div');e.className='list-item';e.innerHTML='<strong>'+n.title+'</strong><br><small>'+n.date+'</small>'; container.appendChild(e);});
+  }
+
+  function renderExplore(){
+    const list=document.getElementById('explore-list'); list.innerHTML='';
+    state.explore.forEach(item=>{const li=document.createElement('li');li.textContent=item;list.appendChild(li);});
+  }
+
+  function renderProfile() {
+    const chars= document.getElementById('profile-characters');
+    const drafts= document.getElementById('profile-drafts');
+    chars.innerHTML=''; drafts.innerHTML='';
+    const owned= state.characters.filter(c=>c.owner===state.user.username && c.status==='published');
+    const draftsList= state.characters.filter(c=>c.owner===state.user.username && c.status==='draft');
+    if(!owned.length) chars.innerHTML='<p class="small">No has publicado personajes aún.</p>';
+    owned.forEach(c=>{const n=document.createElement('div');n.className='list-item';n.innerHTML=`<strong>${c.name}</strong><small>${c.role} · ${c.setting}</small>`;chars.appendChild(n);});
+    if(!draftsList.length) drafts.innerHTML='<p class="small">No tienes borradores.</p>';
+    draftsList.forEach(c=>{const n=document.createElement('div');n.className='list-item';n.innerHTML=`<strong>${c.name}</strong><small>${c.role} · ${c.setting}</small> <button class="btn btn-secondary" onclick="publish('${c.id}')">Publicar</button>`;drafts.appendChild(n);});
+  }
+
+  function renderChat() {
+    const log= document.getElementById('chat-log'); log.innerHTML='';
+    state.chats.slice(-40).forEach(m=>{const d=document.createElement('div');d.className='message '+(m.sender=='user'?'user':'ai');d.textContent=`${m.sender=== 'user' ? 'Tú' : 'Narrador'}: ${m.message}`;log.appendChild(d);});
+    log.scrollTop=log.scrollHeight;
+  }
+
+  function addChat(message,sender='user'){
+    state.chats.push({id:Date.now()+Math.random(),sender,message,created:new Date()});saveState();renderChat();}
+
+  function publish(id){
+    const p=state.characters.find(c=>c.id===id); if(!p)return; p.status='published'; saveState(); renderFeed(); renderProfile();}
+
+  function setActive(tab){
+    document.querySelectorAll('.sidebar button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+    document.querySelectorAll('.tab').forEach(t=>t.style.display= t.id===tab ? 'block':'none');
+    if(tab==='home'){renderFeed();renderNews();}
+    if(tab==='profile')renderProfile();
+    if(tab==='explore')renderExplore();
+    if(tab==='chat')renderChat();
+  }
+
+  document.querySelectorAll('.sidebar button').forEach(btn=>btn.addEventListener('click',()=>setActive(btn.dataset.tab)));
+
+  document.getElementById('login-google').addEventListener('click', () => {
+    window.location.href = '/auth/google';
+  });
+
+  document.getElementById('logout-google').addEventListener('click', () => {
+    window.location.href = '/auth/logout';
+  });
+
+  document.getElementById('chat-send').addEventListener('click',async () => {
+    const msg = document.getElementById('chat-input').value.trim(); if(!msg)return;
+    addChat(msg,'user');
+    document.getElementById('chat-input').value='';
+    addChat('Procesando respuesta IA...', 'ai');
+    const payload = { title:'Chat comunidad', characters:'', theme:'conversación', length:'corta' };
+    const data = await fetch('/api/create-story', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json()).catch(()=>({ok:false}));
+    state.chats.pop();
+    const answer = data.ok ? data.story : 'No se pudo generar respuesta en este momento.';
+    addChat(answer,'ai');
+  });
+
+  document.getElementById('create-character').addEventListener('click', ()=>{
+    const name=document.getElementById('ch-name').value.trim() || 'Personaje anónimo';
+    const role=document.getElementById('ch-role').value.trim() || 'Protagonista';
+    const setting=document.getElementById('ch-setting').value.trim() || 'Fantasía moderna';
+    const personality=document.getElementById('ch-personality').value.trim() || 'valiente y curioso';
+    const obj={id:Date.now()+Math.random(),name,role,setting,personality,owner:state.user.username,status:'draft',snippet:`${name} es un ${role.toLowerCase()} en ${setting}.`};
+    state.characters.push(obj);
+    saveState(); renderProfile(); renderFeed();
+    alert('Personaje guardado en borradores. Visita tu perfil para publicarlo.');
+  });
+
+  fetchUser().then(() => {
+    renderFeed(); renderNews(); renderExplore(); renderProfile(); renderChat();
+  });
+</script>
 </body>
 </html>

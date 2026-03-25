@@ -2,14 +2,74 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const dotenv = require('dotenv');
+const session = require('express-session');
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { Configuration, OpenAIApi } = require('openai');
 
 dotenv.config();
 
 const app = express();
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'cambiame',
+  resave: false,
+  saveUninitialized: false,
+}));
+app.use(passport.initialize());
+app.use(passport.session());
+
+passport.serializeUser(function(user, done) {
+  done(null, user);
+});
+
+passport.deserializeUser(function(obj, done) {
+  done(null, obj);
+});
+
+const googleClientId = process.env.GOOGLE_CLIENT_ID;
+const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+if (!googleClientId || !googleClientSecret) {
+  console.warn('Advertencia: configura GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en .env para habilitar autenticación con Google.');
+}
+
+passport.use(new GoogleStrategy({
+  clientID: googleClientId || 'NOID',
+  clientSecret: googleClientSecret || 'NOSECRET',
+  callbackURL: process.env.GOOGLE_CALLBACK_URL || '/auth/google/callback'
+}, function(accessToken, refreshToken, profile, done) {
+  const user = {
+    id: profile.id,
+    name: profile.displayName,
+    email: profile.emails?.[0]?.value,
+    photo: profile.photos?.[0]?.value
+  };
+  done(null, user);
+}));
+
+app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/?auth=failed' }), (req, res) => {
+  res.redirect('/?auth=success');
+});
+
+app.get('/auth/logout', (req, res) => {
+  req.logout(err => {
+    if (err) console.error(err);
+    res.redirect('/');
+  });
+});
+
+app.get('/api/user', (req, res) => {
+  if (req.user) {
+    return res.json({ ok: true, user: req.user });
+  }
+  res.json({ ok: false, user: null });
+});
 
 const openaiKey = process.env.OPENAI_API_KEY;
 let openai = null;
