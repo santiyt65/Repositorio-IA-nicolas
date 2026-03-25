@@ -12,14 +12,18 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 const openaiKey = process.env.OPENAI_API_KEY;
+let openai = null;
 if (!openaiKey) {
   console.warn('Advertencia: define OPENAI_API_KEY en .env (o en variables de entorno de Render).');
+} else {
+  const configuration = new Configuration({ apiKey: openaiKey });
+  openai = new OpenAIApi(configuration);
 }
 
-const configuration = new Configuration({ apiKey: openaiKey });
-const openai = new OpenAIApi(configuration);
-
 async function askOpenAI(prompt) {
+  if (!openai) {
+    return 'OpenAI no está configurado. Establece OPENAI_API_KEY en el entorno para usar IA real.';
+  }
   const response = await openai.createChatCompletion({
     model: 'gpt-4o-mini',
     messages: [{ role: 'system', content: 'Eres un agente de IA creativo que ayuda a generar historias y personajes.' }, { role: 'user', content: prompt }],
