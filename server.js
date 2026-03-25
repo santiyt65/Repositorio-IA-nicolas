@@ -64,11 +64,21 @@ app.get('/auth/logout', (req, res) => {
   });
 });
 
-app.get('/api/user', (req, res) => {
-  if (req.user) {
-    return res.json({ ok: true, user: req.user });
+app.post('/api/chat-character', async (req, res) => {
+  try {
+    const { characterId, message } = req.body;
+    // Simular búsqueda de personaje (en prototipo, usar localStorage no es ideal, pero para demo)
+    // En producción, usar DB
+    const characters = JSON.parse(localStorage.getItem('ai_chars') || '[]');
+    const char = characters.find(c => c.id === characterId);
+    if (!char) return res.status(404).json({ ok: false, error: 'Personaje no encontrado' });
+    const prompt = `Eres ${char.name}, un ${char.role} en ${char.setting}. Tu personalidad es ${char.personality}. Responde a este mensaje como si fueras ese personaje: "${message}". Mantén el rol y la personalidad.`;
+    const result = await askOpenAI(prompt, { type: 'story', params: { title: 'Chat con personaje', characters: char.name, theme: 'conversación', length: 'corta' } });
+    res.json({ ok: true, response: result });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ ok: false, error: error.message || 'Error en chat' });
   }
-  res.json({ ok: false, user: null });
 });
 
 const openaiKey = process.env.OPENAI_API_KEY;

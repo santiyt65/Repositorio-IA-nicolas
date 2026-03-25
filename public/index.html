@@ -68,6 +68,9 @@
           <input id="ch-role" placeholder="Rol" />
           <input id="ch-setting" placeholder="Entorno" />
           <input id="ch-personality" placeholder="Personalidad" />
+          <label>Imagen del personaje</label>
+          <input type="file" id="ch-image" accept="image/*" />
+          <img id="ch-preview" style="max-width:100px;max-height:100px;display:none;" />
           <button class="btn" id="create-character">Crear y guardar</button>
           <small class="small">Guarda personajes para tu perfil y conviértelos en borrador.</small>
         </div>
@@ -80,11 +83,13 @@
         </div>
       </section>
 
-      <section id="profile" class="tab" style="display:none">
-        <div class="card"><h2>Perfil de usuario</h2>
-          <p><b id="profile-name">Invitado</b></p>
-          <div><h3>Personajes creados</h3><div id="profile-characters"></div></div>
-          <div><h3>Borradores</h3><div id="profile-drafts"></div></div>
+      <section id="character-chat" class="tab" style="display:none">
+        <div class="card">
+          <h2>Conversar con <span id="chat-char-name"></span></h2>
+          <div class="chat-messages" id="char-chat-log"></div>
+          <input id="char-chat-input" placeholder="Escribe un mensaje..." />
+          <button class="btn" id="char-chat-send">Enviar</button>
+          <button class="btn btn-secondary" id="back-to-home">Volver al inicio</button>
         </div>
       </section>
     </main>
@@ -143,11 +148,14 @@
   function renderFeed() {
     const feed = document.getElementById('feed-characters');
     feed.innerHTML='';
-    const chars = state.characters.slice().reverse();
-    if(!chars.length) feed.innerHTML='<p class="small">Aún no hay personajes. Crea uno para empezar.</p>';
+    const chars = state.characters.filter(c => c.status === 'published');
+    if(!chars.length) feed.innerHTML='<p class="small">Aún no hay personajes publicados. Crea uno y publícalo.</p>';
     chars.forEach(c=>{
       const el = document.createElement('div'); el.className='list-item';
-      el.innerHTML=`<strong>${c.name}</strong> <span class="badge">${c.role}</span><br><small>${c.setting} • ${c.personality}</small><p>${c.snippet || ''}</p>`;
+      el.innerHTML=`<img src="${c.image || ''}" style="max-width:50px;max-height:50px;float:left;margin-right:10px;" onerror="this.style.display='none'" />
+      <strong>${c.name}</strong> <span class="badge">${c.role}</span><br><small>${c.setting} • ${c.personality}</small><p>${c.snippet || ''}</p>`;
+      el.style.cursor='pointer';
+      el.addEventListener('click', () => openCharacterChat(c));
       feed.appendChild(el);
     });
   }
@@ -184,9 +192,21 @@
   function addChat(message,sender='user'){
     state.chats.push({id:Date.now()+Math.random(),sender,message,created:new Date()});saveState();renderChat();}
 
-  function publish(id){
-    const p=state.characters.find(c=>c.id===id); if(!p)return; p.status='published'; saveState(); renderFeed(); renderProfile();}
+  function openCharacterChat(char) {
+    state.currentChar = char;
+    document.getElementById('chat-char-name').textContent = char.name;
+    document.getElementById('char-chat-log').innerHTML = '';
+    setActive('character-chat');
+  }
 
+  function addCharChat(message, sender = 'user') {
+    const log = document.getElementById('char-chat-log');
+    const d = document.createElement('div');
+    d.className = 'message ' + (sender === 'user' ? 'user' : 'ai');
+    d.textContent = `${sender === 'user' ? 'Tú' : char.name}: ${message}`;
+    log.appendChild(d);
+    log.scrollTop = log.scrollHeight;
+  }
   function setActive(tab){
     document.querySelectorAll('.sidebar button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
     document.querySelectorAll('.tab').forEach(t=>t.style.display= t.id===tab ? 'block':'none');
@@ -194,6 +214,7 @@
     if(tab==='profile')renderProfile();
     if(tab==='explore')renderExplore();
     if(tab==='chat')renderChat();
+    if(tab==='character-chat'){}
   }
 
   document.querySelectorAll('.sidebar button').forEach(btn=>btn.addEventListener('click',()=>setActive(btn.dataset.tab)));
@@ -202,11 +223,20 @@
     window.location.href = '/auth/google';
   });
 
-  document.getElementById('logout-google').addEventListener('click', () => {
-    window.location.href = '/auth/logout';
+  document.getElementById('char-chat-send').addEventListener('click', async () => {
+    const msg = document.getElementById('char-chat-input').value.trim();
+    if (!msg || !state.currentChar) return;
+    addCharChat(msg, 'user');
+    document.getElementById('char-chat-input').value = '';
+    addCharChat('Pensando...', 'ai');
+    const payload = { characterId: state.currentChar.id, message: msg };
+    const data = await fetch('/api/chat-character', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then(r => r.json()).catch(() => ({ ok: false }));
+    document.getElementById('char-chat-log').lastChild.remove();
+    const answer = data.ok ? data.response : 'Error en respuesta.';
+    addCharChat(answer, 'ai');
   });
 
-  document.getElementById('chat-send').addEventListener('click',async () => {
+  document.getElementById('back-to-home').addEventListener('click', () => setActive('home'));
     const msg = document.getElementById('chat-input').value.trim(); if(!msg)return;
     addChat(msg,'user');
     document.getElementById('chat-input').value='';
@@ -218,12 +248,25 @@
     addChat(answer,'ai');
   });
 
+  document.getElementById('ch-image').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        document.getElementById('ch-preview').src = reader.result;
+        document.getElementById('ch-preview').style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
   document.getElementById('create-character').addEventListener('click', ()=>{
     const name=document.getElementById('ch-name').value.trim() || 'Personaje anónimo';
     const role=document.getElementById('ch-role').value.trim() || 'Protagonista';
     const setting=document.getElementById('ch-setting').value.trim() || 'Fantasía moderna';
     const personality=document.getElementById('ch-personality').value.trim() || 'valiente y curioso';
-    const obj={id:Date.now()+Math.random(),name,role,setting,personality,owner:state.user.username,status:'draft',snippet:`${name} es un ${role.toLowerCase()} en ${setting}.`};
+    const image = document.getElementById('ch-preview').src || '';
+    const obj={id:Date.now()+Math.random(),name,role,setting,personality,image,owner:state.user.username,status:'draft',snippet:`${name} es un ${role.toLowerCase()} en ${setting}.`};
     state.characters.push(obj);
     saveState(); renderProfile(); renderFeed();
     alert('Personaje guardado en borradores. Visita tu perfil para publicarlo.');
